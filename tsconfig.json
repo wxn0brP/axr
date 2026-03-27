@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "module": "esnext",
+        "target": "es2024",
+        "moduleResolution": "bundler",
+        "paths": {
+            "#*": [
+                "./src/*"
+            ]
+        },
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "outDir": "./dist",
+        "declaration": true,
+        "strict": false,
+        "types": [
+            "bun-types"
+        ]
+    },
+    "include": [
+        "./src",
+        "./plugins"
+    ],
+    "exclude": [
+        "node_modules"
+    ],
+    "tsc-alias": {
+        "resolveFullPaths": true,
+        "verbose": false
+    }
+}

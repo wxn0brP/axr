@@ -1,0 +1,27 @@
+{
+    "name": "axr",
+    "version": "0.0.1",
+    "main": "src/index.ts",
+    "description": "",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/wxn0brP/axr.git"
+    },
+    "homepage": "https://github.com/wxn0brP/axr",
+    "author": "wxn0brP",
+    "license": "MIT",
+    "type": "module",
+    "scripts": {
+        "start": "bun run src/index.ts"
+    },
+    "devDependencies": {
+        "@types/bun": "*",
+        "typescript": "^6"
+    },
+    "dependencies": {
+        "@wxn0brp/event-emitter": "^0.0.5",
+        "@wxn0brp/falcon-frame": "^0.8.1",
+        "@wxn0brp/vql": "^0.11.4",
+        "@wxn0brp/vql-dev": "^0.5.3"
+    }
+}
