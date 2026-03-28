@@ -2,9 +2,9 @@ import { PluginCtx } from "#core/types";
 
 export default (ctx: PluginCtx) => {
     ctx.adapter.add("send", async (query) => {
-        const host = process.env.AXR_NOTIF_HOST || "localhost:23456";
+        const { host, secret } = ctx.config || {};
         const url = new URL(`http://${host}/send`);
-        url.searchParams.set("secret", process.env.AXR_NOTIF_SECRET || "");
+        url.searchParams.set("secret", secret || "");
         url.searchParams.set("title", query.data.title);
         url.searchParams.set("body", query.data.body);
 

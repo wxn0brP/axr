@@ -10,12 +10,14 @@ async function play(target: string) {
 }
 
 export default (ctx: PluginCtx) => {
+    const { config } = ctx;
+
     ctx.adapter.add("gen", async (query) => {
-        const model = query.data.model || process.env.AXR_PIPER_MODEL;
+        const model = query.data.model || config.model;
         if (!model) return { err: true, msg: "Piper model not set" };
 
         const text = query.data.text;
-        const target = query.data.target || "/tmp/axr-piper.wav";
+        const target = query.data.target || config.target;
 
         await gen(model, text, target);
 
@@ -26,7 +28,7 @@ export default (ctx: PluginCtx) => {
     });
 
     ctx.adapter.findOne("play", async (query) => {
-        const target = query.search["target"] || "/tmp/axr-piper.wav";
+        const target = query.search["target"] || config.target;
         await play(target);
         return { ok: true, msg: "Piper played" };
     });

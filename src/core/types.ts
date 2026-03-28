@@ -9,6 +9,7 @@ export interface PluginCtx {
     app: FalconFrame;
     query: VQLProcessor["execute"];
     vql: VQLProcessor;
+    config: Record<string, any> | null;
 }
 
 export type Plugin = (ctx: PluginCtx) => void | Promise<void>;

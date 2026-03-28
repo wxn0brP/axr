@@ -26,9 +26,8 @@ bun install
 Set the following environment variables before running:
 
 - `AXR_AUTH` - **Required**. Authentication token for API access
-- `AXR_PIPER_MODEL` - Model name/path for Piper TTS plugin
-- `AXR_NOTIF_HOST` - Notification (ViV notif) service host (default: `localhost:23456`)
-- `AXR_NOTIF_SECRET` - Notification (ViV notif) service secret
+
+After first run, check `./config` directory for configuration files!
 
 ## Usage
 

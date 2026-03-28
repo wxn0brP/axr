@@ -4,6 +4,7 @@ import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { PluginCtx } from "./types";
 import { app, events, vql } from "./var";
+import { copyPluginConfigs, loadPluginConfigs } from "./config";
 
 const loadedPlugins = new Map<string, { dispose?: Function }>();
 
@@ -20,12 +21,14 @@ function createContext(): PluginCtx {
         query: vql.execute.bind(vql),
         vql: vql,
         adapter: new AdapterBuilder(),
+        config: {},
     };
 }
 
 export async function loadPlugins(dir: string) {
     if (!existsSync(dir)) return console.warn("Plugins directory not found: " + dir);
     const entires = await readdir(dir, { withFileTypes: true });
+
     for (const entire of entires) {
         if (!entire.isDirectory()) continue;
 
@@ -34,8 +37,13 @@ export async function loadPlugins(dir: string) {
             await plugin?.dispose?.();
         }
 
+        const pluginDir = join(process.cwd(), dir, entire.name);
+        await copyPluginConfigs(pluginDir, entire.name);
+
         const ctx = createContext();
-        const plugin = await loadPlugin(join(process.cwd(), dir, entire.name, "index.ts"), ctx);
+        ctx.config = await loadPluginConfigs(entire.name);
+
+        const plugin = await loadPlugin(join(pluginDir, "index.ts"), ctx);
 
         console.log("Plugin loaded: " + entire.name);
         const adapter = ctx.adapter.getAdapter();
