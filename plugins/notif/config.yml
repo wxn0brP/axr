@@ -1,2 +1,6 @@
 secret: ""
 host: "localhost:23456"
+
+default_to: "all"
+clients:
+  test: "token"
