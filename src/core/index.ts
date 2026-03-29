@@ -3,6 +3,7 @@ import { app, vql } from "./var";
 import { loadPlugins } from "./plugin";
 import { FF_VQL } from "@wxn0brp/vql";
 import { getAdapterHTTP, getAdaptersHTTP } from "@wxn0brp/vql-dev";
+import { createUnixSocket } from "./unix";
 
 app.l(15397);
 app.setOrigin("*");
@@ -43,6 +44,10 @@ app.get("/VQL/get-adapters", getAdaptersHTTP(vql));
 const coreAdapter = new AdapterBuilder();
 
 vql.dbInstances["core"] = coreAdapter.getAdapter();
+
+if (process.platform !== "win32") {
+    createUnixSocket();
+}
 
 await loadPlugins("./plugins");
 await loadPlugins("./plugins-custom");

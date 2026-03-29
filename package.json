@@ -11,6 +11,9 @@
     "author": "wxn0brP",
     "license": "MIT",
     "type": "module",
+    "bin": {
+        "axr": "./cli.sh"
+    },
     "scripts": {
         "start": "bun run src/index.ts"
     },

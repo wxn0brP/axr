@@ -19,6 +19,7 @@ A modular plugin-based backend system built with TypeScript and Bun, featuring V
 
 ```bash
 bun install
+ing # from wxn0brP/dotfiles
 ```
 
 ## Configuration
@@ -26,6 +27,7 @@ bun install
 Set the following environment variables before running:
 
 - `AXR_AUTH` - **Required**. Authentication token for API access
+- `AXR_SOCKET` - **Optional**. UNIX socket path (default: `/tmp/axr.sock`)
 
 After first run, check `./config` directory for configuration files!
 
@@ -35,6 +37,12 @@ After first run, check `./config` directory for configuration files!
 
 ```bash
 bun run start
+```
+
+### CLI access 
+
+```bash
+axr <vql query>
 ```
 
 ## API Endpoints
