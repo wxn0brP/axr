@@ -7,13 +7,14 @@ import { createUnixSocket } from "./unix";
 import { createVqlRouteHandler } from "@wxn0brp/vql/helpers/falconFrame";
 import { getRawBody, parseLimit } from "@wxn0brp/falcon-frame/body-utils";
 
-app.l(15397);
-app.setOrigin("*");
 
 if (!process.env.AXR_AUTH) {
     console.error("AXR_AUTH not set");
     process.exit(1);
 }
+
+app.l(15397);
+app.setOrigin("*");
 
 app.use((req, res, next) => {
     const auth =
