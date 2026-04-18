@@ -2,10 +2,7 @@
     cmd: "tsc --noEmit && bun run start",
     watch: [
         "src",
-        "plugins"
+        "plugins",
+        "plugins-custom"
     ],
-    restart_cmd: "clear",
-    events: {
-        rs: "clear"
-    }
 }

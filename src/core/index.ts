@@ -4,6 +4,8 @@ import { loadPlugins } from "./plugin";
 import { FF_VQL } from "@wxn0brp/vql";
 import { getAdapterHTTP, getAdaptersHTTP } from "@wxn0brp/vql-dev";
 import { createUnixSocket } from "./unix";
+import { createVqlRouteHandler } from "@wxn0brp/vql/helpers/falconFrame";
+import { getRawBody, parseLimit } from "@wxn0brp/falcon-frame/body-utils";
 
 app.l(15397);
 app.setOrigin("*");
@@ -19,7 +21,8 @@ app.use((req, res, next) => {
         req.body.authorization ||
         req.query.authorization ||
         req.body.auth ||
-        req.query.auth;
+        req.query.auth ||
+        req.query.a;
 
     if (auth !== process.env.AXR_AUTH) {
         res.status(401).json({ err: true, msg: "Unauthorized" });
@@ -29,15 +32,13 @@ app.use((req, res, next) => {
 });
 
 FF_VQL(app, vql);
-app.get("/VQL", async (req, res) => {
-    try {
-        const query = req.query.q as string;
-        const result = await vql.execute(query);
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-})
+app.get("/VQL", createVqlRouteHandler(vql, {
+    getQuery: (req) => req.query.q as string
+}));
+app.customParser("/VQL/r", createVqlRouteHandler(vql, {
+    getQuery: async (req, res) => await getRawBody(req, res, parseLimit("50m"))
+}));
+
 app.get("/VQL/get-adapter", getAdapterHTTP(vql));
 app.get("/VQL/get-adapters", getAdaptersHTTP(vql));
 

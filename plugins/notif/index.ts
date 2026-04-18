@@ -75,7 +75,7 @@ export default (ctx: PluginCtx) => {
         for (const [id, token] of tokens) {
             if (!token) continue;
             await firebaseSend(title, body, token);
-            console.log("Notification sent to:", id);
+            console.log("[notif] Notification sent to:", id);
         }
 
         return { err: false, msg: "Notification sent" };

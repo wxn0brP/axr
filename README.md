@@ -49,13 +49,19 @@ axr <vql query>
 
 ### Authentication
 
-All endpoints require authentication via:
-- `Authorization` header
-- `auth` query parameter
-- `authorization` in request body
+All endpoints require authentication via one of the following methods:
+
+- `req.headers.Authorization`
+- `req.body.authorization`
+- `req.query.authorization`
+- `req.body.auth`
+- `req.query.auth`
+- `req.query.a`
 
 ### VQL Endpoints
 
+- `POST /VQL` - Execute VQL query
+- `POST /VQL/r?a=<token>` - Body is raw string. Example: `curl "http://localhost:15397/VQL/r?a=<token>" --data-binary "<vql query>"` 
 - `GET /VQL?q=<query>` - Execute VQL query
 - `GET /VQL/get-adapter` - Get adapter information
 - `GET /VQL/get-adapters` - Get all available adapters
