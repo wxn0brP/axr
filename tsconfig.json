@@ -19,7 +19,8 @@
     },
     "include": [
         "./src",
-        "./plugins"
+        "./plugins",
+        "./plugins-custom"
     ],
     "exclude": [
         "node_modules"
