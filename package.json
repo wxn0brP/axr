@@ -24,7 +24,7 @@
     "dependencies": {
         "@wxn0brp/event-emitter": "^0.0.5",
         "@wxn0brp/falcon-frame": "^0.8.1",
-        "@wxn0brp/vql": "^0.11.5",
+        "@wxn0brp/vql": "^0.12.0",
         "@wxn0brp/vql-dev": "^0.5.3"
     }
 }
