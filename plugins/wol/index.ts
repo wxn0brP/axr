@@ -1,48 +1,43 @@
 import { PluginCtx } from "#core/types";
-import dgram from "dgram";
 
 const MAC_RE = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
-const broadcast = "255.255.255.255";
-const port = 9;
+const DEFAULT_COMMAND = "wol %%";
 
-function parseMac(mac: string): Buffer | null {
-    if (!MAC_RE.test(mac)) return null;
-    return Buffer.from(mac.replace(/[:-]/g, ""), "hex");
+function buildCommand(template: string, mac: string): string {
+    return template.includes("%%")
+        ? template.replaceAll("%%", mac)
+        : `${template} ${mac}`;
 }
 
-function createMagicPacket(mac: Buffer): Buffer {
-    const magic = Buffer.alloc(6 + 16 * 6);
-    magic.fill(0xff, 0, 6);
-    for (let i = 0; i < 16; i++) mac.copy(magic, 6 + i * 6);
-    return magic;
-}
+async function wake(mac: string, commandTemplate = DEFAULT_COMMAND): Promise<string> {
+    if (!MAC_RE.test(mac)) throw new Error(`Invalid MAC address: ${mac}`);
 
-async function wake(mac: string): Promise<string> {
-    const macBuf = parseMac(mac);
-    if (!macBuf) throw new Error(`Invalid MAC address: ${mac}`);
-
-    const packet = createMagicPacket(macBuf);
-    const socket = dgram.createSocket("udp4");
-    socket.unref();
-
-    return new Promise((resolve, reject) => {
-        socket.on("error", (err) => {
-            socket.close();
-            reject(err);
-        });
-
-        socket.send(packet, 0, packet.length, port, broadcast, (err) => {
-            socket.close();
-            if (err) reject(err);
-            else resolve(`Magic packet sent to ${mac} via ${broadcast}:${port}`);
-        });
+    const command = buildCommand(commandTemplate, mac);
+    const proc = Bun.spawn(["sh", "-c", command], {
+        stdout: "pipe",
+        stderr: "pipe",
     });
+
+    const [stdout, stderr, exitCode] = await Promise.all([
+        new Response(proc.stdout).text(),
+        new Response(proc.stderr).text(),
+        proc.exited,
+    ]);
+
+    if (exitCode !== 0)
+        throw new Error(stderr.trim() || `Wake command failed with exit code ${exitCode}`);
+
+    return stdout.trim() || `Wake command executed: ${command}`;
 }
 
 export default (ctx: PluginCtx) => {
-    const deviceOptions = Object.entries(ctx.config?.devices || {}).map(([id, device]: [string, any]) => ({
-        label: device?.name ? `${device.name} (${id})` : id,
-        value: id,
+    function getDeviceMac(nameOrMac: string) {
+        return ctx.config?.devices?.[nameOrMac] || nameOrMac;
+    };
+
+    const deviceOptions = Object.entries(ctx.config?.devices || {}).map(([name]) => ({
+        label: name,
+        value: name,
     }));
 
     ctx.panel.register({
@@ -59,17 +54,13 @@ export default (ctx: PluginCtx) => {
                     {
                         name: "name",
                         type: "select",
-                        label: "Device name",
-                        options: [
-                            { label: "Manual MAC", value: "" },
-                            ...deviceOptions,
-                        ],
-                    },
-                    {
-                        name: "mac",
-                        type: "string",
-                        label: "MAC",
-                        placeholder: "AA:BB:CC:DD:EE:FF"
+                        label: "Device",
+                        placeholder: "name or mac",
+                        options: deviceOptions,
+                        custom: {
+                            label: "Custom",
+                            placeholder: "MAC address",
+                        },
                     },
                 ],
             },
@@ -77,13 +68,13 @@ export default (ctx: PluginCtx) => {
     });
 
     ctx.adapter.add("send", async (query) => {
-        const mac = query.data.mac || ctx.config?.devices?.[query.data.name]?.mac;
+        const mac = getDeviceMac(query.data.name || query.data.mac);
 
         if (!mac)
             return { err: true, msg: "MAC address or device name is required" };
 
         try {
-            const msg = await wake(mac);
+            const msg = await wake(mac, ctx.config?.command || DEFAULT_COMMAND);
             return { ok: true, msg };
         } catch (e: any) {
             return { err: true, msg: e.message };
