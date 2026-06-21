@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { copyPluginConfigs, loadPluginConfigs } from "./config";
+import { clearPanelAdapter, createPanel } from "./panel";
 import { PluginCtx } from "./types";
 import { app, events, vql } from "./var";
 
@@ -34,7 +35,7 @@ export async function loadPlugin(dir: string, ctx: PluginCtx) {
     return plugin;
 }
 
-function createContext(): PluginCtx {
+function createContext(pluginName: string): PluginCtx {
     return {
         event: events,
         app: app,
@@ -42,6 +43,7 @@ function createContext(): PluginCtx {
         vql: vql,
         adapter: new AdapterBuilder(),
         config: {},
+        panel: createPanel(pluginName),
     };
 }
 
@@ -55,6 +57,7 @@ export async function loadPlugins(dir: string) {
         if (loadedPlugins.has(entire.name)) {
             const plugin = loadedPlugins.get(entire.name);
             await plugin?.dispose?.();
+            clearPanelAdapter(entire.name);
         }
 
         const pluginDir = join(process.cwd(), dir, entire.name);
@@ -62,7 +65,7 @@ export async function loadPlugins(dir: string) {
         await installPluginDependencies(pluginDir);
         await copyPluginConfigs(pluginDir, entire.name);
 
-        const ctx = createContext();
+        const ctx = createContext(entire.name);
         ctx.config = await loadPluginConfigs(entire.name);
 
         const plugin = await loadPlugin(join(pluginDir, "index.ts"), ctx);

@@ -40,6 +40,42 @@ async function wake(mac: string): Promise<string> {
 }
 
 export default (ctx: PluginCtx) => {
+    const deviceOptions = Object.entries(ctx.config?.devices || {}).map(([id, device]: [string, any]) => ({
+        label: device?.name ? `${device.name} (${id})` : id,
+        value: id,
+    }));
+
+    ctx.panel.register({
+        label: "Wake on LAN",
+        description: "Send a Wake on LAN magic packet to a device.",
+        endpoints: [
+            {
+                name: "send",
+                label: "Wake device",
+                description: "Enter a device name from config or a direct MAC address.",
+                operation: "add",
+                collection: "send",
+                fields: [
+                    {
+                        name: "name",
+                        type: "select",
+                        label: "Device name",
+                        options: [
+                            { label: "Manual MAC", value: "" },
+                            ...deviceOptions,
+                        ],
+                    },
+                    {
+                        name: "mac",
+                        type: "string",
+                        label: "MAC",
+                        placeholder: "AA:BB:CC:DD:EE:FF"
+                    },
+                ],
+            },
+        ],
+    });
+
     ctx.adapter.add("send", async (query) => {
         const mac = query.data.mac || ctx.config?.devices?.[query.data.name]?.mac;
 

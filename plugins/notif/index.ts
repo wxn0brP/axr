@@ -44,6 +44,76 @@ export async function firebaseSend(title: string, body: string, token: string) {
 }
 
 export default (ctx: PluginCtx) => {
+    const clientOptions = Object.keys(ctx.config?.clients || {}).map((id) => ({
+        label: id,
+        value: id,
+    }));
+
+    ctx.panel.register({
+        label: "Notifications",
+        description: "Send notifications through configured channels.",
+        endpoints: [
+            {
+                name: "send",
+                label: "Firebase send",
+                description: "Send a notification to one client, a client list, or everyone.",
+                operation: "add",
+                collection: "send",
+                fields: [
+                    {
+                        name: "title",
+                        type: "string",
+                        label: "Title",
+                        required: true
+                    },
+                    {
+                        name: "body",
+                        type: "text",
+
+                        label: "Body",
+                        required: true
+                    },
+                    {
+                        name: "to",
+                        type: "select",
+                        label: "Recipients",
+                        placeholder: "all or id1,id2",
+                        multiple: true,
+                        options: [
+                            { label: "All", value: "all" },
+                            ...clientOptions,
+                        ],
+                        custom: {
+                            label: "Custom",
+                            placeholder: "all or id1,id2",
+                        },
+                    },
+                ],
+            },
+            {
+                name: "r_send",
+                label: "Remote send",
+                description: "Send a notification through the remote endpoint from plugin config.",
+                operation: "add",
+                collection: "r_send",
+                fields: [
+                    {
+                        name: "title",
+                        type: "string",
+                        label: "Title",
+                        required: true
+                    },
+                    {
+                        name: "body",
+                        type: "text",
+                        label: "Body",
+                        required: true
+                    },
+                ],
+            },
+        ],
+    });
+
     ctx.adapter.add("r_send", async (query) => {
         const { host, secret } = ctx.config || {};
         const url = new URL(`http://${host}/send`);
