@@ -1,0 +1,4 @@
+devices:
+  example:
+    name: "Example PC"
+    mac: "AA:BB:CC:DD:EE:FF"
