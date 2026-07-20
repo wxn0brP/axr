@@ -20,6 +20,7 @@
     },
     "devDependencies": {
         "@types/bun": "*",
+        "@wxn0brp/biome": "^0.0.2",
         "typescript": "^6"
     },
     "dependencies": {
