@@ -19,6 +19,7 @@ A modular plugin-based backend system built with TypeScript and Bun, featuring V
 
 ```bash
 bun install
+bun run plugins:update
 ing # from wxn0brP/dotfiles
 ```
 
@@ -30,6 +31,18 @@ Set the following environment variables before running:
 - `AXR_SOCKET` - **Optional**. UNIX socket path (default: `/tmp/axr.sock`)
 
 After first run, check `./config` directory for configuration files!
+
+### Plugin Management
+
+Plugins are managed via `config/plugins.yml`.
+Each plugin is **disabled by default** - you must explicitly enable it:
+
+```yaml
+plugins:
+  plugins/notif: true
+  plugins/piper: 1
+  plugins/wol: false
+```
 
 ## Usage
 

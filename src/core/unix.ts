@@ -1,32 +1,37 @@
+import { existsSync, unlinkSync } from "fs";
 import net from "net";
 import { vql } from "./var";
 
 export function createUnixSocket() {
-    const socketPath = process.env.AXR_SOCKET || "/tmp/axr.sock";
+	const socketPath = process.env.AXR_SOCKET || "/tmp/axr.sock";
 
-    const server = net.createServer((socket => {
-        socket.on("data", async (raw) => {
-            const dataString = raw.toString().trim();
-            const data = dataString.startsWith("{") ? JSON.parse(dataString) : dataString;
-            const res = await vql.execute(data);
-            socket.write(JSON.stringify(res));
-            socket.end();
-        })
-    }));
+	if (existsSync(socketPath)) unlinkSync(socketPath);
 
-    server.listen(socketPath);
+	const server = net.createServer(socket => {
+		socket.on("data", async raw => {
+			const dataString = raw.toString().trim();
+			const data = dataString.startsWith("{")
+				? JSON.parse(dataString)
+				: dataString;
+			const res = await vql.execute(data);
+			socket.write(JSON.stringify(res));
+			socket.end();
+		});
+	});
 
-    server.on("listening", () => {
-        console.log(`UNIX Server listening on ${socketPath}`);
-    });
+	server.listen(socketPath);
 
-    server.on("error", (err) => {
-        console.error(`UNIX Server error: ${err.message}`);
-    });
+	server.on("listening", () => {
+		console.log(`UNIX Server listening on ${socketPath}`);
+	});
 
-    server.on("close", () => {
-        console.log("UNIX Server closed");
-    });
+	server.on("error", err => {
+		console.error(`UNIX Server error: ${err.message}`);
+	});
 
-    return server;
+	server.on("close", () => {
+		console.log("UNIX Server closed");
+	});
+
+	return server;
 }

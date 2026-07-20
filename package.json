@@ -15,7 +15,8 @@
         "axr": "./cli.sh"
     },
     "scripts": {
-        "start": "bun run src/index.ts"
+        "start": "bun run src/index.ts",
+        "plugins:update": "bun run scripts/update-plugins-config.ts"
     },
     "devDependencies": {
         "@types/bun": "*",
