@@ -9,7 +9,8 @@ export type PanelFieldType =
 	| "boolean"
 	| "text"
 	| "json"
-	| "select";
+	| "select"
+	| "datetime";
 
 export interface PanelField {
 	name: string;

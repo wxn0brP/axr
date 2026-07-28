@@ -86,6 +86,9 @@ function renderField(field) {
         const multiple = field.multiple ? " multiple" : "";
         return "<label for=\"" + id + "\">" + escapeHtml(label) + "<select id=\"" + id + "\" name=\"" + escapeHtml(field.name) + "\"" + required + multiple + ">" + options + customOption + "</select>" + customInput + "</label>";
     }
+    if (field.type === "datetime") {
+        return "<label for=\"" + id + "\">" + escapeHtml(label) + "<input id=\"" + id + "\" name=\"" + escapeHtml(field.name) + "\" type=\"datetime-local\"" + required + value + "></label>";
+    }
     return "<label for=\"" + id + "\">" + escapeHtml(label) + "<input id=\"" + id + "\" name=\"" + escapeHtml(field.name) + "\" type=\"" + (field.type === "number" ? "number" : "text") + "\"" + required + placeholder + value + "></label>";
 }
 
