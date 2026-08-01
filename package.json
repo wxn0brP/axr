@@ -21,7 +21,7 @@
     "devDependencies": {
         "@types/bun": "*",
         "@wxn0brp/biome": "^0.0.2",
-        "typescript": "^6"
+        "typescript": "^7.0.0"
     },
     "dependencies": {
         "@wxn0brp/event-emitter": "^0.0.5",
