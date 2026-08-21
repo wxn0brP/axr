@@ -24,7 +24,7 @@
         "typescript": "^7"
     },
     "dependencies": {
-        "@wxn0brp/event-emitter": "^0.0.5",
+        "@wxn0brp/event-emitter": "^0.0.6",
         "@wxn0brp/falcon-frame": "^0.9.2",
         "@wxn0brp/vql": "^0.12.3",
         "@wxn0brp/vql-dev": "^0.6.1"
