@@ -74,6 +74,7 @@ export interface PluginCtx {
 	query: VQLProcessor["execute"];
 	vql: VQLProcessor;
 	config: Record<string, any> | null;
+	configDir(): string;
 	panel: PanelCtx;
 }
 

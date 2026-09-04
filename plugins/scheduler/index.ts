@@ -2,6 +2,7 @@ import { PluginCtx } from "#core/types";
 import { YAML } from "bun";
 import { existsSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 interface Task {
 	id: string;
@@ -17,7 +18,7 @@ interface TasksFile {
 	tasks: Task[];
 }
 
-const TASKS_FILE = "config/scheduler/tasks.yml";
+let TASKS_FILE: string;
 const timers = new Map<string, NodeJS.Timeout>();
 
 function generateId(): string {
@@ -125,6 +126,7 @@ export function dispose() {
 }
 
 export default async (ctx: PluginCtx) => {
+	TASKS_FILE = join(ctx.configDir(), "tasks.yml");
 	const tasksData = await readTasks();
 	for (const task of tasksData.tasks) {
 		if (!task.sent && task.enabled !== false) {

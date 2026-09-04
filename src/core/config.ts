@@ -5,6 +5,10 @@ import { join } from "node:path";
 
 const CONFIG_DIR = "config";
 
+export function getPluginConfigDir(pluginName: string): string {
+	return join(CONFIG_DIR, pluginName);
+}
+
 export async function loadPluginsConfig(): Promise<Record<string, any>> {
 	const configPath = join(CONFIG_DIR, "plugins.yml");
 	if (!existsSync(configPath)) return {};

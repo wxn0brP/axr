@@ -2,25 +2,9 @@ import { PluginCtx } from "#core/types";
 import admin from "firebase-admin";
 import { Message } from "firebase-admin/messaging";
 import fs from "fs";
+import { join } from "node:path";
 
 let initialized = false;
-
-try {
-	const path = "config/notif/firebase.json";
-	if (fs.existsSync(path)) {
-		const serviceAccount = JSON.parse(
-			fs.readFileSync("config/notif/firebase.json", "utf8"),
-		);
-		admin.initializeApp({
-			credential: admin.credential.cert(serviceAccount),
-		});
-		initialized = true;
-	} else {
-		console.error("Firebase service account not found");
-	}
-} catch (e) {
-	console.error(e);
-}
 
 export async function firebaseSend(title: string, body: string, token: string) {
 	if (!initialized) return console.error("Firebase not initialized");
@@ -43,6 +27,24 @@ export async function firebaseSend(title: string, body: string, token: string) {
 }
 
 export default (ctx: PluginCtx) => {
+	const path = join(ctx.configDir(), "firebase.json");
+	try {
+		if (fs.existsSync(path)) {
+			const serviceAccount = JSON.parse(fs.readFileSync(path, "utf8"));
+			admin.initializeApp({
+				credential: admin.credential.cert(serviceAccount),
+			});
+			initialized = true;
+		} else {
+			console.error("Firebase service account not found");
+			return;
+		}
+	} catch (e) {
+		console.error("Firebase not initialized");
+		console.error(e);
+		return;
+	}
+
 	const clientOptions = Object.keys(ctx.config?.clients || {}).map(id => ({
 		label: id,
 		value: id,

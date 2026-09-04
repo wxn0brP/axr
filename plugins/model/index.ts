@@ -2,10 +2,12 @@ import { PluginCtx } from "#core/types";
 import { YAML } from "bun";
 import { existsSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 const LIST_MARKER = "The current list of models includes:";
-const STATE_FILE = "config/model/state.yml";
 const TIME_RE = /^([01]?\d|2[0-3]):[0-5]\d$/;
+
+let STATE_FILE: string;
 
 interface State {
 	models: string[];
@@ -174,6 +176,8 @@ export function dispose() {
 }
 
 export default (ctx: PluginCtx) => {
+	STATE_FILE = join(ctx.configDir(), "state.yml");
+
 	ctx.panel.register({
 		label: "Model Watch",
 		description: "Monitor the OpenCode Go model list and alert on new models.",

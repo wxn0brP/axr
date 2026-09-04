@@ -3,7 +3,11 @@ import { $ } from "bun";
 import { existsSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { copyPluginConfigs, loadPluginConfigs } from "./config";
+import {
+	copyPluginConfigs,
+	getPluginConfigDir,
+	loadPluginConfigs,
+} from "./config";
 import { clearPanelAdapter, createPanel } from "./panel";
 import { PluginCtx } from "./types";
 import { app, events, vql } from "./var";
@@ -49,6 +53,7 @@ function createContext(pluginName: string): PluginCtx {
 		vql: vql,
 		adapter: new AdapterBuilder(),
 		config: {},
+		configDir: () => getPluginConfigDir(pluginName),
 		panel: createPanel(pluginName),
 	};
 }
