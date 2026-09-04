@@ -48,15 +48,19 @@ function readFieldValue(field, form) {
 }
 
 function buildVql(adapter, endpoint, form) {
-    const lines = [adapter.name + " " + (endpoint.operation || "add") + " " + (endpoint.collection || endpoint.name)];
+    const operation = endpoint.operation || "add";
+    const lines = [adapter.name + " " + operation + " " + (endpoint.collection || endpoint.name)];
+    let dataLines = 0;
     for (const field of endpoint.fields || []) {
         const value = readFieldValue(field, form);
         if (value === undefined) continue;
         if ((value === "" || value === false) && !field.required) continue;
         const target = fieldTarget(endpoint, field);
         const alias = target === "search" ? "s" : target === "updater" ? "u" : "d";
+        if (alias === "d") dataLines++;
         lines.push(alias + "." + field.name + " = " + literal(value, field.type));
     }
+    if (operation === "add" && dataLines === 0) lines.push("d.");
     return lines.join("\n");
 }
 

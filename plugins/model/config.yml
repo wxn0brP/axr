@@ -1,0 +1,7 @@
+url: "https://raw.githubusercontent.com/anomalyco/opencode/refs/heads/dev/packages/web/src/content/docs/go.mdx"
+
+times:
+  - "08:00"
+  - "20:00"
+
+to: "all"
