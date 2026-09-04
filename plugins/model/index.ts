@@ -1,4 +1,5 @@
 import { PluginCtx } from "#core/types";
+import { Cron } from "croner";
 import { YAML } from "bun";
 import { existsSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -14,7 +15,7 @@ interface State {
 	last_check: string;
 }
 
-let timer: ReturnType<typeof setTimeout>;
+let jobs: Cron[] = [];
 
 async function readState(): Promise<State> {
 	if (!existsSync(STATE_FILE))
@@ -78,12 +79,9 @@ function normalizeTimes(times: unknown) {
 	throw new Error("Invalid times: " + list.join(", "));
 }
 
-function msUntilNext(time: string, now = new Date()) {
+export function hhmmToCron(time: string) {
 	const [h, m] = time.split(":").map(Number);
-	const target = new Date(now);
-	target.setHours(h, m, 0, 0);
-	if (target.getTime() <= now.getTime()) target.setDate(target.getDate() + 1);
-	return target.getTime() - now.getTime();
+	return `${m} ${h} * * *`;
 }
 
 async function notify(ctx: PluginCtx, added: string[]) {
@@ -156,23 +154,27 @@ async function check(ctx: PluginCtx) {
 
 function scheduleNext(ctx: PluginCtx) {
 	const times = normalizeTimes(ctx.config?.times);
-	const delay = Math.min(...times.map(t => msUntilNext(t)));
-
-	if (timer) clearTimeout(timer);
-	timer = setTimeout(async () => {
-		await check(ctx);
-		scheduleNext(ctx);
-	}, delay);
-
-	console.log(
-		`[model-watch] Next check in ${Math.round(delay / 60000)} min (times: ${times.join(", ")})`,
+	jobs = times.map(
+		t =>
+			new Cron(
+				hhmmToCron(t),
+				{
+					protect: true,
+				},
+				async () => {
+					console.log(`[model-watch] Cron triggered (time: ${t})`);
+					await check(ctx);
+				},
+			),
 	);
+
+	console.log(`[model-watch] Cron scheduled (times: ${times.join(", ")})`);
 }
 
 export function dispose() {
-	if (timer) clearTimeout(timer);
-	timer = undefined;
-	console.log("[model-watch] Timer cleared");
+	for (const job of jobs) job.stop();
+	jobs = [];
+	console.log("[model-watch] Cron jobs stopped");
 }
 
 export default (ctx: PluginCtx) => {

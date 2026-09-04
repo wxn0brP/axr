@@ -1,4 +1,5 @@
 import { PluginCtx } from "#core/types";
+import { Cron } from "croner";
 import { YAML } from "bun";
 import { existsSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -19,9 +20,15 @@ interface TasksFile {
 }
 
 let TASKS_FILE: string;
-const timers = new Map<string, NodeJS.Timeout>();
+let tickJob: Cron;
 
-function generateId(): string {
+export function isDue(task: Task, now: number) {
+	if (task.enabled === false || task.sent) return false;
+	const target = new Date(task.time).getTime();
+	return !Number.isNaN(target) && target <= now;
+}
+
+function generateId() {
 	return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
@@ -48,7 +55,7 @@ async function readTasks(): Promise<TasksFile> {
 	}
 }
 
-function writeTasks(data: TasksFile): void {
+function writeTasks(data: TasksFile) {
 	try {
 		writeFileSync(TASKS_FILE, YAML.stringify(data));
 	} catch (error) {
@@ -56,33 +63,13 @@ function writeTasks(data: TasksFile): void {
 	}
 }
 
-function scheduleTask(ctx: PluginCtx, task: Task): void {
-	if (!task.enabled || task.sent) return;
+async function processTasks(ctx: PluginCtx) {
+	const tasksData = await readTasks();
+	const due = tasksData.tasks.filter(t => isDue(t, Date.now()));
 
-	const targetTime = new Date(task.time).getTime();
-	const now = Date.now();
-	const delay = targetTime - now;
-
-	if (delay <= 0) {
-		console.log(`[scheduler] Task ${task.id} is in the past, skipping`);
-		return;
-	}
-
-	const timer = setTimeout(async () => {
+	const sentIds = new Set<string>();
+	for (const task of due) {
 		console.log(`[scheduler] Executing task ${task.id}`);
-
-		const tasksData = await readTasks();
-		const taskIndex = tasksData.tasks.findIndex(t => t.id === task.id);
-		if (taskIndex === -1) {
-			timers.delete(task.id);
-			return;
-		}
-
-		const currentTask = tasksData.tasks[taskIndex];
-		if (!currentTask.enabled || currentTask.sent) {
-			timers.delete(task.id);
-			return;
-		}
 
 		try {
 			const result = await ctx.query({
@@ -91,17 +78,16 @@ function scheduleTask(ctx: PluginCtx, task: Task): void {
 					add: {
 						collection: "send",
 						data: {
-							title: currentTask.title,
-							body: currentTask.body,
-							to: currentTask.to || ctx.config?.default_to || "all",
+							title: task.title,
+							body: task.body,
+							to: task.to || ctx.config?.default_to || "all",
 						},
 					},
 				},
 			});
 
 			if (result && !("err" in result && result.err)) {
-				tasksData.tasks.splice(taskIndex, 1);
-				writeTasks(tasksData);
+				sentIds.add(task.id);
 				console.log(`[scheduler] Task ${task.id} sent and removed`);
 			} else {
 				console.error(`[scheduler] Failed to send task ${task.id}:`, result);
@@ -109,31 +95,33 @@ function scheduleTask(ctx: PluginCtx, task: Task): void {
 		} catch (error) {
 			console.error(`[scheduler] Error executing task ${task.id}:`, error);
 		}
+	}
 
-		timers.delete(task.id);
-	}, delay);
-
-	timers.set(task.id, timer);
-	console.log(`[scheduler] Scheduled task ${task.id} for ${task.time}`);
+	if (sentIds.size > 0) {
+		tasksData.tasks = tasksData.tasks.filter(t => !sentIds.has(t.id));
+		writeTasks(tasksData);
+	}
 }
 
 export function dispose() {
-	for (const [, timer] of timers) {
-		clearTimeout(timer);
-	}
-	timers.clear();
-	console.log("[scheduler] All timers cleared");
+	tickJob?.stop();
+	tickJob = undefined;
+	console.log("[scheduler] Cron tick stopped");
 }
 
 export default async (ctx: PluginCtx) => {
 	TASKS_FILE = join(ctx.configDir(), "tasks.yml");
-	const tasksData = await readTasks();
-	for (const task of tasksData.tasks) {
-		if (!task.sent && task.enabled !== false) {
-			task.enabled = true;
-			scheduleTask(ctx, task);
-		}
-	}
+
+	tickJob = new Cron(
+		"* * * * *",
+		{
+			protect: true,
+		},
+		() => processTasks(ctx),
+	);
+	console.log("[scheduler] Cron tick scheduled (every minute)");
+
+	processTasks(ctx);
 
 	ctx.adapter.add("tasks", async query => {
 		const { time, title, body, to } = query.data;
@@ -173,7 +161,6 @@ export default async (ctx: PluginCtx) => {
 
 		tasksData.tasks.push(newTask);
 		writeTasks(tasksData);
-		scheduleTask(ctx, newTask);
 
 		return {
 			ok: true,
@@ -217,12 +204,6 @@ export default async (ctx: PluginCtx) => {
 		const removed = tasksData.tasks.splice(taskIndex, 1)[0];
 		writeTasks(tasksData);
 
-		const timer = timers.get(removed.id);
-		if (timer) {
-			clearTimeout(timer);
-			timers.delete(removed.id);
-		}
-
 		return {
 			ok: true,
 			data: removed,
@@ -260,15 +241,6 @@ export default async (ctx: PluginCtx) => {
 
 		tasksData.tasks[taskIndex] = task;
 		writeTasks(tasksData);
-
-		const timer = timers.get(task.id);
-		if (timer) {
-			clearTimeout(timer);
-			timers.delete(task.id);
-		}
-		if (task.enabled && !task.sent) {
-			scheduleTask(ctx, task);
-		}
 
 		return {
 			ok: true,
