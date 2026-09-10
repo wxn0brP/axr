@@ -107,6 +107,29 @@ async function notify(ctx: PluginCtx, added: string[]) {
 	}
 }
 
+async function notifyRemoved(ctx: PluginCtx, removed: string[]) {
+	try {
+		const result: any = await ctx.query({
+			db: "notif",
+			d: {
+				add: {
+					collection: "send",
+					data: {
+						title: "Models removed from OpenCode Go",
+						body: "Removed models: " + removed.join(", "),
+						to: ctx.config?.to || "all",
+					},
+				},
+			},
+		});
+		if (result?.err)
+			console.error("[model-watch] Removal notification failed:", result.msg);
+		else console.log("[model-watch] Removal notification sent");
+	} catch (error: any) {
+		console.error("[model-watch] Removal notification error:", error.message);
+	}
+}
+
 async function check(ctx: PluginCtx) {
 	const url = ctx.config.url;
 	if (!url) throw new Error("Missing URL");
@@ -122,7 +145,9 @@ async function check(ctx: PluginCtx) {
 		const state = await readState();
 		const isFirstRun = state.models.length === 0;
 		const known = new Set(state.models);
+		const current = new Set(models);
 		const added = models.filter(m => !known.has(m));
+		const removed = state.models.filter(m => !current.has(m));
 
 		writeState({
 			models,
@@ -131,16 +156,24 @@ async function check(ctx: PluginCtx) {
 
 		if (isFirstRun) {
 			console.log(`[model-watch] Initial state saved: ${models.length} models`);
-		} else if (added.length > 0) {
-			console.log(`[model-watch] New models: ${added.join(", ")}`);
-			await notify(ctx, added);
 		} else {
-			console.log(`[model-watch] No changes (${models.length} models)`);
+			if (added.length > 0) {
+				console.log(`[model-watch] New models: ${added.join(", ")}`);
+				await notify(ctx, added);
+			}
+			if (removed.length > 0) {
+				console.log(`[model-watch] Removed models: ${removed.join(", ")}`);
+				await notifyRemoved(ctx, removed);
+			}
+			if (added.length === 0 && removed.length === 0) {
+				console.log(`[model-watch] No changes (${models.length} models)`);
+			}
 		}
 
 		return {
 			ok: true,
 			added,
+			removed,
 			total: models.length,
 		};
 	} catch (error: any) {
@@ -182,7 +215,7 @@ export default (ctx: PluginCtx) => {
 
 	ctx.panel.register({
 		label: "Model Watch",
-		description: "Monitor the OpenCode Go model list and alert on new models.",
+		description: "Monitor the OpenCode Go model list and alert on changes.",
 		endpoints: [
 			{
 				name: "check_now",
