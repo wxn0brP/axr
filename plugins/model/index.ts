@@ -92,8 +92,9 @@ async function notify(ctx: PluginCtx, added: string[]) {
 				add: {
 					collection: "send",
 					data: {
-						title: "New models in OpenCode Go",
-						body: "New models: " + added.join(", "),
+						t: "New models in OpenCode Go",
+						b: "New models: " + added.join(", "),
+						m: "model",
 						to: ctx.config?.to || "all",
 					},
 				},
@@ -115,8 +116,9 @@ async function notifyRemoved(ctx: PluginCtx, removed: string[]) {
 				add: {
 					collection: "send",
 					data: {
-						title: "Models removed from OpenCode Go",
-						body: "Removed models: " + removed.join(", "),
+						t: "Models removed from OpenCode Go",
+						b: "Removed models: " + removed.join(", "),
+						m: "model",
 						to: ctx.config?.to || "all",
 					},
 				},

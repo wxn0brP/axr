@@ -63,17 +63,19 @@ export default (ctx: PluginCtx) => {
 				collection: "send",
 				fields: [
 					{
-						name: "title",
+						name: "t",
 						type: "string",
 						label: "Title",
-						required: true,
 					},
 					{
-						name: "body",
+						name: "b",
 						type: "text",
-
 						label: "Body",
-						required: true,
+					},
+					{
+						name: "m",
+						type: "string",
+						label: "Module",
 					},
 					{
 						name: "to",
@@ -104,16 +106,19 @@ export default (ctx: PluginCtx) => {
 				collection: "r_send",
 				fields: [
 					{
-						name: "title",
+						name: "t",
 						type: "string",
 						label: "Title",
-						required: true,
 					},
 					{
-						name: "body",
+						name: "b",
 						type: "text",
 						label: "Body",
-						required: true,
+					},
+					{
+						name: "m",
+						type: "string",
+						label: "Module",
 					},
 				],
 			},
@@ -121,11 +126,42 @@ export default (ctx: PluginCtx) => {
 	});
 
 	ctx.adapter.add("r_send", async query => {
+		const data = query.data as {
+			title?: string;
+			body?: string;
+			t?: string;
+			b?: string;
+			m?: string;
+		};
+
+		let title: string;
+		let body: string;
+
+		// New format: t, b, m all required
+		if (data.t !== undefined || data.b !== undefined || data.m !== undefined) {
+			if (!data.t || !data.b || !data.m)
+				return {
+					err: true,
+					msg: "Missing required fields: t, b, m",
+				};
+			title = `[${data.m}] ${data.t}`;
+			body = data.b;
+		} else {
+			// Old format: title, body
+			if (!data.title || !data.body)
+				return {
+					err: true,
+					msg: "Missing required fields: title, body",
+				};
+			title = data.title;
+			body = data.body;
+		}
+
 		const { host, secret } = ctx.config || {};
 		const url = new URL(`http://${host}/send`);
 		url.searchParams.set("secret", secret || "");
-		url.searchParams.set("title", query.data.title);
-		url.searchParams.set("body", query.data.body);
+		url.searchParams.set("title", title);
+		url.searchParams.set("body", body);
 
 		const res = await fetch(url);
 		if (!res.ok)
@@ -143,20 +179,44 @@ export default (ctx: PluginCtx) => {
 				msg: "Firebase not initialized",
 			};
 
-		let { title, body, to } = query.data as {
-			title: string;
-			body: string;
-			to: string;
+		const data = query.data as {
+			title?: string;
+			body?: string;
+			t?: string;
+			b?: string;
+			m?: string;
+			to?: string;
 		};
-		to = to || ctx.config.default_to || "all";
 
-		if (!title || !body || !to)
+		let title: string;
+		let body: string;
+		const to = data.to || ctx.config.default_to || "all";
+
+		if (data.title !== undefined || data.body !== undefined) {
+			if (!data.title || !data.body)
+				return {
+					err: true,
+					msg: "Missing required fields: title, body",
+				};
+			title = data.title;
+			body = data.body;
+		} else {
+			if (!data.t || !data.b || !data.m)
+				return {
+					err: true,
+					msg: "Missing required fields: t, b, m",
+				};
+			title = `[${data.m}] ${data.t}`;
+			body = data.b;
+		}
+
+		if (!to)
 			return {
 				err: true,
-				msg: "Missing required fields",
+				msg: "Missing required field: to",
 			};
 
-		const toSend =
+		const toSend: string[] =
 			to === "all" ? Object.keys(ctx.config.clients) : to.split(",");
 		if (toSend.length === 0)
 			return {
@@ -164,12 +224,10 @@ export default (ctx: PluginCtx) => {
 				msg: "Invalid recipient",
 			};
 
-		const tokens = toSend.map(id => [
-			id,
-			ctx.config.clients[id],
-		]);
-		for (const [id, token] of tokens) {
+		for (const id of toSend) {
+			const token = ctx.config.clients[id];
 			if (!token) continue;
+
 			await firebaseSend(title, body, token);
 			console.log("[notif] Notification sent to:", id);
 		}

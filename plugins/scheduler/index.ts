@@ -8,8 +8,9 @@ import { join } from "node:path";
 interface Task {
 	id: string;
 	time: string;
-	title: string;
-	body: string;
+	t: string;
+	b: string;
+	m?: string;
 	to?: string;
 	enabled?: boolean;
 	sent?: boolean;
@@ -78,8 +79,9 @@ async function processTasks(ctx: PluginCtx) {
 					add: {
 						collection: "send",
 						data: {
-							title: task.title,
-							body: task.body,
+							t: task.t,
+							b: task.b,
+							m: task.m || "scheduler",
 							to: task.to || ctx.config?.default_to || "all",
 						},
 					},
@@ -124,12 +126,18 @@ export default async (ctx: PluginCtx) => {
 	processTasks(ctx);
 
 	ctx.adapter.add("tasks", async query => {
-		const { time, title, body, to } = query.data;
+		const { time, t, b, m, to } = query.data as {
+			time?: string;
+			t?: string;
+			b?: string;
+			m?: string;
+			to?: string;
+		};
 
-		if (!time || !title || !body) {
+		if (!time || !t || !b || !m) {
 			return {
 				err: true,
-				msg: "Missing required fields: time, title, body",
+				msg: "Missing required fields: time, t, b, m",
 			};
 		}
 
@@ -152,8 +160,9 @@ export default async (ctx: PluginCtx) => {
 		const newTask: Task = {
 			id: generateId(),
 			time,
-			title,
-			body,
+			t,
+			b,
+			m,
 			to: to || ctx.config?.default_to || "all",
 			enabled: true,
 			sent: false,
@@ -234,8 +243,9 @@ export default async (ctx: PluginCtx) => {
 			}
 			task.time = updates.time;
 		}
-		if (updates.title) task.title = updates.title;
-		if (updates.body) task.body = updates.body;
+		if (updates.t) task.t = updates.t;
+		if (updates.b) task.b = updates.b;
+		if (updates.m) task.m = updates.m;
 		if (updates.to) task.to = updates.to;
 		if (updates.enabled !== undefined) task.enabled = updates.enabled;
 
@@ -274,16 +284,23 @@ export default async (ctx: PluginCtx) => {
 						required: true,
 					},
 					{
-						name: "title",
+						name: "t",
 						type: "string",
 						label: "Title",
 						required: true,
 					},
 					{
-						name: "body",
+						name: "b",
 						type: "text",
 						label: "Body",
 						required: true,
+					},
+					{
+						name: "m",
+						type: "string",
+						label: "Mod",
+						default: "scheduler",
+						required: false,
 					},
 					{
 						name: "to",
