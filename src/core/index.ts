@@ -4,8 +4,7 @@ import { getAdapterHTTP, getAdaptersHTTP } from "@wxn0brp/vql-dev";
 import { AdapterBuilder } from "@wxn0brp/vql/helpers/apiAbstract";
 import { createVqlRouteHandler } from "@wxn0brp/vql/helpers/falconFrame";
 import { getPanelAdapters } from "./panel";
-import { loadPluginsConfig } from "./config";
-import { loadPlugins } from "./plugin";
+import { reloadAllPluginsAndConfig } from "./plugin";
 import { createUnixSocket } from "./unix";
 import { app, vql } from "./var";
 
@@ -102,6 +101,4 @@ if (process.platform !== "win32") {
 	createUnixSocket();
 }
 
-const pluginsConfig = await loadPluginsConfig();
-await loadPlugins("./plugins", pluginsConfig);
-await loadPlugins("./plugins-custom", pluginsConfig);
+await reloadAllPluginsAndConfig();

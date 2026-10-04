@@ -7,6 +7,7 @@ import {
 	copyPluginConfigs,
 	getPluginConfigDir,
 	loadPluginConfigs,
+	loadPluginsConfig,
 } from "./config";
 import { clearPanelAdapter, createPanel } from "./panel";
 import { PluginCtx } from "./types";
@@ -109,4 +110,10 @@ export async function loadPlugins(
 		vql.relation.dbs[pluginName] = adapter;
 		loadedPlugins.set(pluginName, plugin);
 	}
+}
+
+export async function reloadAllPluginsAndConfig() {
+	const pluginsConfig = await loadPluginsConfig();
+	await loadPlugins("./plugins", pluginsConfig);
+	await loadPlugins("./plugins-custom", pluginsConfig);
 }

@@ -29,15 +29,19 @@ export async function firebaseSend(title: string, body: string, token: string) {
 export default (ctx: PluginCtx) => {
 	const path = join(ctx.configDir(), "firebase.json");
 	try {
-		if (fs.existsSync(path)) {
-			const serviceAccount = JSON.parse(fs.readFileSync(path, "utf8"));
-			admin.initializeApp({
-				credential: admin.credential.cert(serviceAccount),
-			});
-			initialized = true;
+		if (!initialized) {
+			if (fs.existsSync(path)) {
+				const serviceAccount = JSON.parse(fs.readFileSync(path, "utf8"));
+				admin.initializeApp({
+					credential: admin.credential.cert(serviceAccount),
+				});
+				initialized = true;
+			} else {
+				console.error("Firebase service account not found");
+				return;
+			}
 		} else {
-			console.error("Firebase service account not found");
-			return;
+			console.log("Firebase already initialized");
 		}
 	} catch (e) {
 		console.error("Firebase not initialized");
