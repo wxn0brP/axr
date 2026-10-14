@@ -5,7 +5,6 @@ import { existsSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-const LIST_MARKER = "The current list of models includes:";
 const TIME_RE = /^([01]?\d|2[0-3]):[0-5]\d$/;
 
 let STATE_FILE: string;
@@ -47,19 +46,13 @@ function writeState(state: State) {
 	}
 }
 
-export function parseModels(markdown: string) {
-	const idx = markdown.indexOf(LIST_MARKER);
-	if (idx === -1) return [];
-
-	let section = markdown.slice(idx + LIST_MARKER.length);
-	const end = section.search(/\n---|\n## /);
-	if (end !== -1) section = section.slice(0, end);
-
-	const models = [
-		...section.matchAll(/^- \*\*(.+?)\*\*/gm),
-	].map(m => m[1].trim());
+export function parseModels(payload: any): string[] {
+	const list: any[] = Array.isArray(payload?.data) ? payload.data : [];
+	const ids: string[] = list
+		.map(m => (typeof m === "string" ? m : m?.id))
+		.filter(id => typeof id === "string" && id.length > 0);
 	return [
-		...new Set(models),
+		...new Set(ids),
 	];
 }
 
@@ -84,6 +77,17 @@ export function hhmmToCron(time: string) {
 	return `${m} ${h} * * *`;
 }
 
+function formatModels(models: string[]) {
+	return models
+		.map(m =>
+			m
+				.split("-")
+				.map(w => (w ? w[0].toUpperCase() + w.slice(1) : w))
+				.join(" "),
+		)
+		.join(", ");
+}
+
 async function notify(ctx: PluginCtx, added: string[]) {
 	try {
 		const result: any = await ctx.query({
@@ -93,7 +97,7 @@ async function notify(ctx: PluginCtx, added: string[]) {
 					collection: "send",
 					data: {
 						t: "New models in OpenCode Go",
-						b: "New models: " + added.join(", "),
+						b: "New models: " + formatModels(added),
 						m: "model",
 						to: ctx.config?.to || "all",
 					},
@@ -117,7 +121,7 @@ async function notifyRemoved(ctx: PluginCtx, removed: string[]) {
 					collection: "send",
 					data: {
 						t: "Models removed from OpenCode Go",
-						b: "Removed models: " + removed.join(", "),
+						b: "Removed models: " + formatModels(removed),
 						m: "model",
 						to: ctx.config?.to || "all",
 					},
@@ -140,9 +144,9 @@ async function check(ctx: PluginCtx) {
 		const res = await fetch(url);
 		if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-		const models = parseModels(await res.text());
+		const models = parseModels(await res.json());
 		if (models.length === 0)
-			throw new Error("No models found, page format changed?");
+			throw new Error("No models found, API format changed?");
 
 		const state = await readState();
 		const isFirstRun = state.models.length === 0;
