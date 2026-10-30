@@ -28,6 +28,6 @@
         "@wxn0brp/falcon-frame": "^0.9.3",
         "@wxn0brp/vql": "^0.13.2",
         "@wxn0brp/vql-dev": "^0.6.3",
-        "croner": "^10.0.1"
+        "croner": "^11.0.0"
     }
 }
